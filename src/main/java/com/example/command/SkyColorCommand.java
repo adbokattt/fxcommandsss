@@ -7,31 +7,24 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
-import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.commands.Commands;
-import net.minecraft.network.chat.Component;
-import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.command.CommandManager;
+import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.Text;
 
-/**
- * /setskycolor <r> <g> <b> <duration_seconds>
- * <p>
- * Небо — общий визуальный элемент мира, поэтому команда рассылает пакет
- * всем игрокам, находящимся сейчас на сервере (см. {@link PlayerLookup#all}).
- * Каждый клиент самостоятельно плавно перекрашивает и возвращает небо обратно.
- */
 public class SkyColorCommand {
 
-    public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
-        dispatcher.register(Commands.literal("setskycolor")
-                .requires(source -> source.hasPermission(2))
-                .then(Commands.argument("r", IntegerArgumentType.integer(0, 255))
-                        .then(Commands.argument("g", IntegerArgumentType.integer(0, 255))
-                                .then(Commands.argument("b", IntegerArgumentType.integer(0, 255))
-                                        .then(Commands.argument("duration", FloatArgumentType.floatArg(0.05F))
+    public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
+        dispatcher.register(CommandManager.literal("setskycolor")
+                .requires(source -> source.hasPermissionLevel(2))
+                .then(CommandManager.argument("r", IntegerArgumentType.integer(0, 255))
+                        .then(CommandManager.argument("g", IntegerArgumentType.integer(0, 255))
+                                .then(CommandManager.argument("b", IntegerArgumentType.integer(0, 255))
+                                        .then(CommandManager.argument("duration", FloatArgumentType.floatArg(0.05F))
                                                 .executes(SkyColorCommand::execute))))));
     }
 
-    private static int execute(CommandContext<CommandSourceStack> ctx) {
+    private static int execute(CommandContext<ServerCommandSource> ctx) {
         int r = IntegerArgumentType.getInteger(ctx, "r");
         int g = IntegerArgumentType.getInteger(ctx, "g");
         int b = IntegerArgumentType.getInteger(ctx, "b");
@@ -41,13 +34,13 @@ public class SkyColorCommand {
         SkyColorPayload payload = new SkyColorPayload(r, g, b, durationTicks);
 
         int count = 0;
-        for (ServerPlayer player : PlayerLookup.all(ctx.getSource().getServer())) {
+        for (ServerPlayerEntity player : PlayerLookup.all(ctx.getSource().getServer())) {
             ServerPlayNetworking.send(player, payload);
             count++;
         }
 
         int sentTo = count;
-        ctx.getSource().sendSuccess(() -> Component.literal(
+        ctx.getSource().sendFeedback(() -> Text.literal(
                 "Цвет неба изменён на RGB(" + r + ", " + g + ", " + b + ") на " + durationSeconds
                         + " сек. для " + sentTo + " игрок(ов)."), true);
         return count;
