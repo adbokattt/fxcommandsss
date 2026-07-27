@@ -1,18 +1,7 @@
 package com.example.client;
 
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.util.math.Vec3d;
 
-/**
- * Чисто клиентское состояние временной перекраски неба.
- * <p>
- * Логика фаз (по реальному времени, не по тикам — так эффект остаётся
- * плавным независимо от tps/лагов сервера):
- * <ol>
- *     <li>Fade-in ({@link #FADE_MS} мс) — плавный переход от обычного цвета к заданному;</li>
- *     <li>Hold — небо держит заданный цвет весь оставшийся указанный срок;</li>
- *     <li>Fade-out ({@link #FADE_MS} мс) — плавный возврат к обычному цвету неба.</li>
- * </ol>
- */
 public final class SkyColorManager {
 
     private static final long FADE_MS = 1000L;
@@ -20,28 +9,18 @@ public final class SkyColorManager {
     private static boolean active = false;
     private static long startTimeMs;
     private static long holdDurationMs;
-    private static Vec3 targetColor = Vec3.ZERO;
+    private static Vec3d targetColor = Vec3d.ZERO;
 
     private SkyColorManager() {
     }
 
-    /**
-     * Запускает перекраску неба.
-     *
-     * @param red           0-255
-     * @param green         0-255
-     * @param blue          0-255
-     * @param durationTicks сколько тиков всего должен длиться эффект (включая fade-in/out)
-     */
     public static void startOverride(int red, int green, int blue, int durationTicks) {
-        targetColor = new Vec3(
+        targetColor = new Vec3d(
                 clamp01(red / 255.0),
                 clamp01(green / 255.0),
                 clamp01(blue / 255.0));
 
-        long totalMs = durationTicks * 50L; // 1 тик = 50 мс
-        // Если запрошенная длительность короче, чем два fade-перехода,
-        // просто ужимаем fade-in/out, чтобы эффект не "сломался" на коротких значениях.
+        long totalMs = durationTicks * 50L;
         holdDurationMs = Math.max(0L, totalMs - FADE_MS - FADE_MS);
         startTimeMs = System.currentTimeMillis();
         active = true;
@@ -60,11 +39,7 @@ public final class SkyColorManager {
         return true;
     }
 
-    /**
-     * Возвращает "смешанный" цвет неба: исходный ванильный {@code originalColor}
-     * плавно замещается на {@link #targetColor} в зависимости от текущей фазы.
-     */
-    public static Vec3 applyOverride(Vec3 originalColor) {
+    public static Vec3d applyOverride(Vec3d originalColor) {
         if (!isActive()) {
             return originalColor;
         }
