@@ -1,35 +1,26 @@
 package com.example.network;
 
 import com.example.Fxccommands;
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.network.codec.ByteBufCodecs;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.network.RegistryByteBuf;
+import net.minecraft.network.codec.PacketCodec;
+import net.minecraft.network.codec.PacketCodecs;
+import net.minecraft.network.packet.CustomPayload;
 
-/**
- * Пакет Server -> Client: приказывает клиенту временно перекрасить небо.
- *
- * @param red           канал R (0-255)
- * @param green         канал G (0-255)
- * @param blue          канал B (0-255)
- * @param durationTicks сколько тиков небо держит указанный цвет,
- *                      прежде чем плавно вернуться к обычному
- */
-public record SkyColorPayload(int red, int green, int blue, int durationTicks) implements CustomPacketPayload {
+public record SkyColorPayload(int red, int green, int blue, int durationTicks) implements CustomPayload {
 
-    public static final CustomPacketPayload.Type<SkyColorPayload> TYPE =
-            new CustomPacketPayload.Type<>(Fxccommands.id("sky_color"));
+    public static final CustomPayload.Id<SkyColorPayload> ID =
+            new CustomPayload.Id<>(Fxccommands.id("sky_color"));
 
-    public static final StreamCodec<RegistryFriendlyByteBuf, SkyColorPayload> STREAM_CODEC = StreamCodec.composite(
-            ByteBufCodecs.VAR_INT, SkyColorPayload::red,
-            ByteBufCodecs.VAR_INT, SkyColorPayload::green,
-            ByteBufCodecs.VAR_INT, SkyColorPayload::blue,
-            ByteBufCodecs.VAR_INT, SkyColorPayload::durationTicks,
+    public static final PacketCodec<RegistryByteBuf, SkyColorPayload> CODEC = PacketCodec.tuple(
+            PacketCodecs.VAR_INT, SkyColorPayload::red,
+            PacketCodecs.VAR_INT, SkyColorPayload::green,
+            PacketCodecs.VAR_INT, SkyColorPayload::blue,
+            PacketCodecs.VAR_INT, SkyColorPayload::durationTicks,
             SkyColorPayload::new
     );
 
     @Override
-    public Type<? extends CustomPacketPayload> type() {
-        return TYPE;
+    public Id<? extends CustomPayload> getId() {
+        return ID;
     }
 }
